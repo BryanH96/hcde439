@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>A1 BLINK!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>Assignment 1: Blinking LEDs</h1>
+  
+
+  <!-- 1) Drawing -->
+  <figure>
+    <img src="A1/A1_drawing.png" alt="Hand drawing of Arduino with three LEDs and resistors" />
+    <figcaption>Figure 1. Circuit drawing for 3 LEDs (pins 13, 8, 4) with series resistors.</figcaption>
+  </figure>
+  <!-- code -->
+  <style>
+    .code-box{
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:12px 14px;
+      background:#f8f9fb;
+      font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space:pre; 
+      overflow:auto;
+      max-width: 900px;
+    }
+  </style>
+  
+  <pre class="code-box">
+  // Arduino sketch: staggered LED blinks by tick
+  
+  int LED1 = 13;
+  int LED2 = 8;
+  int LED3 = 4; 
+  // make all LED pin# a variable
+  
+  int tick = 0;    // set a tick, that makes LEDs blink at different ticks
+  int blink = 50;  // blink duration (ms)
+  
+  void setup() {
+    pinMode(LED1, OUTPUT);
+    pinMode(LED2, OUTPUT);
+    pinMode(LED3, OUTPUT);
+    // set LED pins to OUTPUT
+  
+    digitalWrite(LED1, LOW);
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+    // set LEDs to off
+  }
+  
+  void loop() {
+    // the delay between ticks
+    delay(450);
+    tick++;
+  
+    // for each tick, LED1 blinks
+    digitalWrite(LED1, HIGH);
+  
+    // for every two ticks, LED2 blinks
+    if (tick % 2 == 0) {
+      digitalWrite(LED2, HIGH);
+    }
+  
+    // for every four ticks, LED3 blinks
+    if (tick % 4 == 0) {
+      digitalWrite(LED3, HIGH);
+    }
+  
+    delay(blink);
+  
+    // turn off LEDs after blink duration
+    digitalWrite(LED1, LOW);
+    digitalWrite(LED2, LOW);
+    digitalWrite(LED3, LOW);
+  }
+  </pre>
+  <!-- 2) Demo GIF -->
+  <figure>
+    <img src="A1/IMG_9472.GIF" alt="GIF of the LEDs blinking on the breadboard" />
+    <figcaption>Figure 2. Demo of independent blinking (1000 ms, 500 ms, 250 ms).</figcaption>
+  </figure>
+
+  <!-- 3) Calculations (placed after the GIF) -->
+  <section>
+    <h2>Resistor Calculation</h2>
+    <p><strong>DC forward current (design):</strong> 20 mA = 0.02 A</p>
+    <p><strong>Typical red LED forward voltage:</strong> 1.85 V</p>
+    <p><strong>Required R at 5 V:</strong> R = (5 − 1.85) / 0.02 = 157.5 Ω</p>
+    <p><strong>Chosen value:</strong> 220 Ω (safer, ~14.3 mA). Resistor power ≈ 0.045 W → 1/8 W or 1/4 W ok.</p>
+  </section>
+
+  <!-- 4) Voltage–time graph -->
+  <figure>
+    <img src="A1/A1_Voltage_graph.png" alt="Graph of LED voltage vs time for the three blink rates" />
+    <figcaption>Figure 3. Voltage across each LED vs time.</figcaption>
+  </figure>
+
+  <section>
+    <h2>Additional Questions</h2>
+  
+    <h3>How many LEDs could you blink independently? How much current would that draw?</h3>
+    <p>Up to 18 LEDs (avoid D0/D1). 330 Ω → ~9 mA each, ~163 mA total. 220 Ω → ~13.6 mA each; cap ~14 LEDs (~191 mA total).</p>
+  
+    <h3>How fast do you need to blink your LEDs until you no longer can tell that they are blinking?</h3>
+    <p>About 60 Hz (period ~16 ms) looks continuous.</p>
+
+    <h3>AI usage</h3>
+    <p>
+      Portions of this page’s HTML/CSS were generated with assistance from ChatGPT.
+      I reviewed and edited all code; any mistakes are my own.
+    </p>
+
+  </section>
+</body>
+  </body>
+</html>
