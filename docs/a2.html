@@ -1,18 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
-
-    <title>Example Student's HCDE 439 Physical Computing Page!</title>
-
+    <title>A2 FADE!</title>
     <link href="style.css" rel="stylesheet" type="text/css" />
+    <style>
+      .code-box {
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 12px 14px;
+        background: #f8f9fb;
+        font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        white-space: pre;
+        overflow: auto;
+        max-width: 900px;
+      }
+      .image-placeholder {
+        border: 2px dashed #b5bdc8;
+        border-radius: 10px;
+        background: #f8f9fb;
+        color: #596373;
+        text-align: center;
+        padding: 52px 20px;
+        max-width: 850px;
+        box-sizing: border-box;
+      }
+      figure { margin: 22px 0; }
+      figcaption { margin-top: 8px; }
+    </style>
   </head>
   <body>
-    <h1>Example Student's Assignment 2!</h1>
-    <div class="header">
-      <img src="red-panda.jpg" />
-      <p>Here is all the documentation for assignment 2!</p>
-    </div>
+    <h1>Assignment 2: FADE</h1>
+    <p>The toy has three LEDs. All three are fully lit when powered on. While the button is held, LED 1 gradually fades out; the other two remain on. Releasing the button returns LED 1 to full brightness.</p>
+
+    <!-- 1) Schematic image: replace this placeholder with an img tag. -->
+    <figure>
+      <img src="A2/A2_drawing.png" alt="Schematic of three LEDs and a button" />
+    
+      <figcaption>Figure 1. Schematic: three red LEDs on D9, D10, and D11, each with a 220 &Omega; series resistor. A button on D2 uses a 10 k&Omega; external pull-down resistor.</figcaption>
+    </figure>
+
+    <h2>Arduino Code</h2>
+    <pre class="code-box"><code>// Start with LED 1 at full brightness.
+int brightness = 255;
+
+void setup() {
+  // Configure the three LED pins as outputs using a for-loop.
+  for (int pin = 9; pin &lt;= 11; pin++) {
+    // Enable output mode on each LED pin.
+    pinMode(pin, OUTPUT);
+  }
+
+  // Use ordinary INPUT because D2 has an external 10 kOhm pull-down resistor.
+  pinMode(2, INPUT);
+}
+
+void loop() {
+  // Keep LED 2 fully on.
+  digitalWrite(10, HIGH);
+
+  // Keep LED 3 fully on.
+  digitalWrite(11, HIGH);
+
+  // Check if the button connects D2 to 5 V.
+  if (digitalRead(2) == HIGH) {
+    // Continue fading only while brightness is above zero.
+    if (brightness &gt; 0) {
+      // Reduce LED 1 brightness by five PWM steps.
+      brightness = brightness - 5;
+    }
+
+    // Make the fading visible to the eye.
+    delay(20);
+  } else {
+    // Immediately restore full brightness when the button is released.
+    brightness = 255;
+  }
+
+  // Output the brightness level to PWM pin D9.
+  analogWrite(9, brightness);
+}</code></pre>
+
+    <!-- 4) Demonstration: replace this placeholder with GIF or embedded video. -->
+    <figure>
+      <img src="A2/A2_demo.gif" alt="Three LEDs on; holding the button dims LED 1" />
+      <!-- Replace the div above with: <img src="A2/A2_demo.gif" alt="Three LEDs on; holding the button dims LED 1" /> -->
+      <figcaption>Figure 3. Demo: three LEDs start at full brightness. Holding the button causes LED 1 to fade out; releasing it restores full brightness.</figcaption>
+    </figure>
+
+    <!-- 5) Calculations, in the same style as A1. -->
+    <section>
+      <h2>Resistor Calculation</h2>
+      <p><strong>DC forward current (design):</strong> 20 mA = 0.02 A</p>
+      <p><strong>Typical red LED forward voltage (design assumption):</strong> 1.85 V</p>
+      <p><strong>Required R at 5 V:</strong> R = (5 − 1.85) / 0.02 = 157.5 &Omega;</p>
+      <p><strong>Chosen value:</strong> 220 &Omega; for each LED (safer, approximately 14.3 mA per LED). Resistor power &asymp; 0.045 W, so a 1/8 W or 1/4 W resistor is adequate.</p>
+      <p><strong>Button current limiting:</strong> I = 5 V / 10,000 &Omega; = 0.0005 A = 0.5 mA when pressed. I used a 10 k&Omega; pull-down resistor to hold D2 at LOW when the button is released and to avoid a direct short between 5 V and GND when pressed.</p>
+    </section>
+
+    <!-- 6) Question 1 voltage graph image. -->
+
+    <section>
+      <h2>Additional Questions</h2>
+
+      <h3>1. Draw the voltage-versus-time graph for analogWrite(64), analogWrite(128), and analogWrite(255).</h3>
+      <p>The PWM duty cycle increases as the analogWrite value increases.</p>
+       <figure>
+      <img src="A2/A2_voltage_graph.png" alt="PWM voltage vs time for analogWrite 64, 128, and 255" />
+      <!-- Replace the div above with: <img src="A2/A2_voltage_graph.png" alt="PWM voltage vs time for analogWrite 64, 128, and 255" /> -->
+      <figcaption>Figure 3. Voltage-versus-time graph comparing the PWM signals at analogWrite(64), analogWrite(128), and analogWrite(255). The duty cycles are approximately 25%, 50%, and 100%.</figcaption>
+    </figure>
+
+      <h3>2. What is the total LED current if all LEDs are on? Is this within the Arduino current limits? How long would a 1200 mAh battery last?</h3>
+      <p>Using the same design assumptions as A1, each red LED draws approximately (5 − 1.85) / 220 = 0.0143 A = 14.3 mA. Three LEDs at full brightness draw approximately 3 &times; 14.3 = 43.0 mA in total. Because each LED is connected to a separate output pin, each pin supplies about 14.3 mA, below the commonly recommended 20 mA operating current per UNO R3 I/O pin. The LED total is also within typical board-level limits, although other board loads must be considered.</p>
+      <p>Ignoring the Arduino board and conversion losses, the ideal LED-only battery life is 1200 mAh / 43.0 mA &asymp; 27.9 hours. A more realistic illustration includes an assumed 50 mA for the UNO board: total current &asymp; 43.0 + 50 = 93.0 mA, giving 1200 / 93.0 &asymp; 12.9 hours under idealized conditions. Actual runtime depends on battery voltage, regulator losses, the UNO's true consumption, and how long LED 1 is dimmed. A 1200 mAh battery cannot necessarily power the UNO directly without an appropriate voltage supply.</p>
+
+      <h3>3. Measure the actual voltage across an LED when on. How does it compare with the theoretical forward voltage?</h3>
+      <p>I measured <strong>2.02 V</strong> across one red LED when it was on. The theoretical value used in my resistor calculation was 1.85 V. The measured voltage is 0.17 V higher, or about 9.2% higher, but still within the typical range for a red LED. This difference is expected because the actual forward voltage varies with LED model, current, and temperature. With a 220 &Omega; resistor, the estimated current based on my measured value is (5 − 2.02) / 220 &asymp; 13.5 mA.</p>
+
+      <h3>4. AI usage</h3>
+      <p>ChatGPT helped me organize the HTML page in a format, and draft the written responses. I reviewed the content and will insert my own circuit images, graph, and demonstration.</p>
+    </section>
   </body>
 </html>
