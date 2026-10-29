@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+
+    <title>A3 INPUT OUTPUT!</title>
+
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <h1>Assignment 3: Input Output</h1>
+  
+
+  <!-- 1) Drawing -->
+  <figure>
+    <img src="A3/A3 drawing.png" alt="Hand drawing of Arduino with three LEDs and resistors" />
+    <figcaption>Figure 1. Circuit drawing for thermistor(pin A0), motor(pin 3), LEDs (pins 13, 7, 4) with series resistors,</figcaption>
+  </figure>
+  <!-- code -->
+  <style>
+    .code-box{
+      border:1px solid #ddd;
+      border-radius:12px;
+      padding:12px 14px;
+      background:#f8f9fb;
+      font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      white-space:pre; 
+      overflow:auto;
+      max-width: 900px;
+    }
+  </style>
+  
+  <pre class="code-box">
+    //Green, yellow, red LEDs and motor with fan that operate according to temperature
+
+    //set thermistor pin
+    const int sensorPin = A0;
+    //set LED pins
+    const int redLED = 13;
+    const int yellowLED = 7;
+    const int greenLED = 4;
+    //set fan pin
+    const int fanPin = 3;
+    
+    
+    void setup() {
+      Serial.begin(9600);
+      //set LED pins to output
+      pinMode(redLED, OUTPUT);
+      pinMode(yellowLED, OUTPUT);
+      pinMode(greenLED, OUTPUT);
+      //set them start with off 
+      digitalWrite(redLED, LOW);
+      digitalWrite(yellowLED, LOW);
+      digitalWrite(greenLED, LOW);
+    }
+    
+    
+    int mappedValue;
+    int sensorValue;
+    void loop() {
+      //read the raw sensor value
+      Serial.println(sensorValue);
+      //constrain the snesor value
+      sensorValue = constrain(analogRead(sensorPin), 480, 620);
+      //map the sensor value to 0 to 255
+      mappedValue = map(sensorValue, 460, 620, 0, 255);
+      //send the mapped value to fan motor, fan spins faster when warmer
+      analogWrite(fanPin, mappedValue);
+    
+      //if the temperature is cool, only green LED on
+      if (sensorValue < 520) {
+        digitalWrite(greenLED, HIGH);
+        digitalWrite(yellowLED, LOW);
+        digitalWrite(redLED, LOW);
+      } 
+      //if the temperature is warm, only yellow LED on
+      else if (sensorValue <= 580) {
+        digitalWrite(greenLED, LOW);
+        digitalWrite(yellowLED, HIGH);
+        digitalWrite(redLED, LOW);
+      }
+      //if the temperature is hot, only red LED on
+      else {
+        digitalWrite(greenLED, LOW);
+        digitalWrite(yellowLED, LOW);
+        digitalWrite(redLED, HIGH);
+      }
+    
+    }
+  </pre>
+  <br>
+  <!-- 2) Demo GIF -->
+  <figure>
+    <video src="A3/thermistor demo.mp4" controls width="320">
+        Your browser doesn’t support HTML5 video.
+      </video>
+      
+    <figcaption>Figure 2. Demo of LEDs and fan operate according to the temperature read from thermistor.</figcaption>
+  </figure>
+  <br>
+  <!-- 3) Calculations (placed after the GIF) -->
+  <section>
+    <h2>Resistor Calculation</h2>
+    <p><strong>DC forward current (design):</strong> 20 mA = 0.02 A</p>
+    <p><strong>Typical red LED forward voltage:</strong> 1.85 V</p>
+    <p><strong>Required R at 5 V:</strong> R = (5 − 1.85) / 0.02 = 157.5 Ω</p>
+    <p><strong>Chosen value:</strong> 220 Ω (safer, ~14.3 mA). Resistor power ≈ 0.045 W → 1/8 W or 1/4 W ok.</p>
+  </section>
+  <br>
+  <!-- 4) Voltage–time graph -->
+  <figure>
+    <img src="A1/A1_Voltage_graph.png" alt="Graph of LED voltage vs time for the three blink rates" />
+    <figcaption>Figure 3. Voltage across each LED vs time.</figcaption>
+  </figure>
+  <br>
+  <section>
+    <h2>Additional Questions</h2>
+  
+    <h3>In your voltage divider, can the variable resistor be either R1 or R2 or does it need to be one or the other? Justify your answer with example calculations.</h3>
+    <p>Yes, the thermistor can be either R1 or R2, the only change is the direction.
+    </p>
+    <p><strong>Sensor bottom (to GND):</strong> Vout = 5 × (Rs / (10kΩ + Rs))</p>
+    <p><strong>Sensor top (to +5 V):</strong> Vout = 5 × (10kΩ / (10kΩ + Rs))</p>
+    <br>
+  
+    <h3>AnalogWrite and analogRead are respectively 8-bit and 10-bit values. Imagine you had 10-bit PWM and a 16-bit analog-to-digital converter instead. How would this change your map() code? Explain your answer.</h3>
+    <p>16-bit is 2^16 which is 0~65535, 10-bit is 2^10 0~1023.</p>
+    <p>the map() would be map(analogRead, 0, 65535, 0, 1023);</p>
+    <br>
+
+    <h3> Draw a graph where the x-axis is time and the y-axis is voltage. Plot the voltage at V-measure of your voltage divider of your shared gif.</h3>
+    <figure>
+        <img src="A3/A3 Voltage graph.png" alt="Drawing of Voltage change measured at thermistor" />
+        <figcaption>Figure.3 Voltage change measured at thermistor</figcaption>
+    </figure>
+    
+    <br>
+    <h3>AI usage</h3>
+    <p>
+      Portions of this page’s HTML/CSS were generated with assistance from ChatGPT.
+      I reviewed and edited all code; any mistakes are my own.
+    </p>
+
+  </section>
+</body>
+  </body>
+</html>
