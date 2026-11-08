@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+  <title>A4: Libraries — IR Remote Controlled Servo</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <style>
+    .code-box { border: 1px solid #ddd; border-radius: 12px; padding: 12px 14px; background: #f8f9fb; font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace; white-space: pre; overflow: auto; max-width: 900px; }
+    figure { margin: 22px 0; }
+    figure img { max-width: min(100%, 900px); height: auto; display: block; }
+    figcaption { margin-top: 8px; max-width: 900px; }
+    section { max-width: 900px; }
+    .placeholder { border: 2px dashed #aab5c3; background: #f8f9fb; border-radius: 8px; padding: 18px; max-width: 850px; }
+    .note { color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Assignment 4: Libraries — Remote-Controlled Servo</h1>
+  <p>My project uses an infrared (IR) receiver as an input and a servo motor as an output. Pressing a button on the remote control changes the servo's target position between 0&deg; and 90&deg;. The code uses two libraries: <code>IRremote</code> to decode infrared commands and <code>Servo</code> to control the motor.</p>
+
+  <!-- 1) Schematic -->
+  <figure>
+    <img src="A4/A4_drawing.png" alt="Connection drawing for Arduino Uno, IR receiver on D2, and servo on D3" />
+    <figcaption>Figure 1. Circuit drawing: The IR receiver output is connected to digital pin D2, and the servo signal wire is connected to D3. Both components share 5V and GND. The IR receiver provides input, and the servo provides motion output. No LED current-limiting resistor is needed because the circuit does not use a discrete LED.</figcaption>
+  </figure>
+
+  <!-- 2) Physical circuit -->
+  <figure>
+    <img src="A4/circuit_photo.jpg" alt="Photograph of the assembled Arduino, IR receiver and servo circuit" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+    <div class="placeholder" style="display:none">Add your image here: <code>A4/circuit_photo.jpg</code></div>
+    <figcaption>Figure 2. Physical circuit assembled with the Arduino Uno, an IR receiver, a servo motor, and connecting wires. The wiring matches the schematic shown above.</figcaption>
+  </figure>
+
+  <!-- 3) Firmware -->
+  <h2>Arduino Code</h2>
+  <p class="note">The code below documents the intended D2/D3 wiring. Verify it against the exact sketch you uploaded to your Arduino before submitting.</p>
+  <pre class="code-box"><code>// Include the infrared remote control library.
+#include &lt;IRremote.hpp&gt;
+
+// Include the servo motor control library.
+#include &lt;Servo.h&gt;
+
+// Create a Servo object for the motor.
+Servo myServo;
+
+// Keep track of the current servo angle.
+int angle = 0;
+
+void setup() {
+  // Open the serial monitor connection at 9600 baud.
+  Serial.begin(9600);
+
+  // Read infrared commands using the receiver on digital pin 2.
+  IrReceiver.begin(2, DISABLE_LED_FEEDBACK);
+
+  // Connect the servo control signal to digital pin 3.
+  myServo.attach(3);
+
+  // Start the servo at 0 degrees.
+  myServo.write(0);
+}
+
+void loop() {
+  // Check whether a complete infrared message has arrived.
+  if (IrReceiver.decode()) {
+
+    // Ignore unknown commands and automatically repeated signals.
+    if (IrReceiver.decodedIRData.protocol != UNKNOWN &amp;&amp; !(IrReceiver.decodedIRData.flags &amp; IRDATA_FLAGS_IS_REPEAT)) {
+
+      // Check if the servo is currently at its initial angle.
+      if (angle == 0) {
+        // Change the target angle to 90 degrees.
+        angle = 90;
+      } else {
+        // Change the target angle back to 0 degrees.
+        angle = 0;
+      }
+
+      // Move the servo to the selected target angle.
+      myServo.write(angle);
+
+      // Print the current target angle for debugging.
+      Serial.println(angle);
+    }
+
+    // Continue receiving infrared commands.
+    IrReceiver.resume();
+  }
+}</code></pre>
+
+  <section>
+    <h2>Pin and Value Explanation</h2>
+    <p><strong>Pin 2:</strong> The IR receiver's OUT pin sends incoming remote-control signals to the Arduino. <strong>Pin 3:</strong> The servo's signal wire receives timed position-control pulses from the Servo library. <strong>5V and GND:</strong> Power and shared ground for the receiver and a small, lightly loaded servo; the servo may require a separate regulated 5V supply if its current draw causes resets (with grounds connected).</p>
+    <p><strong>0&deg; and 90&deg;:</strong> These are the two target positions, chosen to make movement easy to observe. <strong>9600:</strong> Serial Monitor baud rate used to print the target angle. <strong>UNKNOWN</strong> and <strong>IRDATA_FLAGS_IS_REPEAT:</strong> Filter unknown signals and held-button repeat messages, so a single held press is not intended to trigger repeated toggles.</p>
+    <p>No <code>analogRead()</code> is used, so the analog-sensor calibration requirement does not apply.</p>
+  </section>
+
+  <!-- 4) Demonstration -->
+  <figure>
+    <img src="A4/A4_demo.gif" alt="Animated demonstration of Arduino IR remote controlling a servo motor" />
+    <figcaption>Figure 3. Operation demo: The infrared receiver detects a remote-control command, and the servo responds by changing its target position.</figcaption>
+  </figure>
+
+  <section>
+    <h2>Additional Questions</h2>
+    <h3>Question 1. Voltage at pin 9 when the servo sweeps from 0&deg; to 180&deg;</h3>
+    <figure>
+      <img src="A4/Q1.png" alt="Voltage over time at pin 9 for servo positions of 0, 90 and 180 degrees" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+      <div class="placeholder" style="display:none">Add your graph here: <code>A4/Q1.png</code></div>
+      <figcaption>Figure 4. Servo control voltage versus time at pin 9 (the hypothetical pin specified in Question 1, not the D3 pin used in my physical circuit). The voltage pulses switch approximately between 0V and 5V. Their high-time increases as the requested servo angle increases, while the pulse period stays near 20 ms. The sketch updates the target angle every 100 ms and takes about 18.1 seconds per 0&deg; to 180&deg; sweep.</figcaption>
+    </figure>
+
+    <h3>Question 2. How would you handle an incorrect input reading 1% of the time?</h3>
+    <p>I would check the validity of incoming signals and reject implausible readings. For a sensor whose value is expected to remain stable while being checked, multiple readings can be used to confirm an input rather than trusting a single measurement. With my IR receiver, protocol decoding and rejecting unknown commands provides an initial validity check; one-off remote button presses should not be rejected merely because they cannot be sampled three times.</p>
+    <pre class="code-box"><code>// Pseudocode for a repeatedly sampled, stable input:
+read1 = readSensor()
+read2 = readSensor()
+read3 = readSensor()
+if atLeastTwoReadingsAgree(read1, read2, read3):
+    use(majorityValue)
+else:
+    ignoreThisReading()</code></pre>
+
+    <h3>Question 3. How would you reduce random measurement noise of &plusmn;10%?</h3>
+    <p>For a numerical sensor, I would take several measurements and use a moving average to reduce random fluctuations. Averaging reduces independent noise, although it also makes the result respond more slowly to real changes. My IR receiver provides decoded digital commands, rather than a continuously varying analog measurement, so this technique is a general solution to the question, not a step used in my actual code.</p>
+    <pre class="code-box"><code>// Pseudocode for a numerical sensor:
+sum = 0
+for i from 1 to 10:
+    sum = sum + readSensor()
+    wait(aShortInterval)
+filteredValue = sum / 10
+use(filteredValue)</code></pre>
+
+    <h3>Question 4. AI Usage</h3>
+    <p>I used ChatGPT while planning and documenting this assignment. I asked for a minimal Arduino project satisfying the two-library requirement, help with wiring an infrared receiver and servo motor, a commented example sketch, an explanation of the servo's voltage-versus-time graph, and help formatting this webpage. I reviewed the design and changed the servo pin from D9 to D3 to match my actual wiring. AI was useful for organizing the documentation and explaining the underlying concepts, but I still needed to verify the circuit, code, and measurements myself.</p>
+    <p class="note"><strong>AI disclosure requirement:</strong> The assignment also asks for a shared LLM conversation link or cited prompts and output. Add your conversation share URL here before submitting: <strong>[INSERT CONVERSATION SHARE LINK]</strong>.</p>
+  </section>
+</body>
+</html>
