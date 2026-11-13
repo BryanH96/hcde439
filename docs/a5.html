@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, maximum-scale=1.0" />
+  <title>Assignment 5: High(er) Voltage and Transistors</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <style>
+    .code-box { border: 1px solid #ddd; border-radius: 12px; padding: 12px 14px; background: #f8f9fb; font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; white-space: pre; overflow: auto; max-width: 900px; }
+    figure { margin: 22px 0; }
+    figure img { max-width: min(100%, 900px); height: auto; display: block; object-fit: contain; }
+    figcaption { margin-top: 8px; max-width: 900px; }
+    section { max-width: 900px; }
+    .placeholder { border: 2px dashed #aab5c3; background: #f8f9fb; border-radius: 8px; padding: 18px; max-width: 850px; }
+    .note { color: #555; }
+    table { border-collapse: collapse; margin: 12px 0 18px; max-width: 900px; }
+    th, td { border: 1px solid #d2d8de; text-align: left; padding: 8px 12px; vertical-align: top; }
+    @media(max-width: 600px) { th, td { padding: 6px; } }
+  </style>
+</head>
+<body>
+  <h1>Assignment 5: High(er) Voltage and Transistors</h1>
+  <p>This project uses an infrared remote control and receiver as the input, and an N-channel IRLZ44N MOSFET to switch a DC motor powered by an external supply. The Arduino reads remote-control signals with the <code>IRremote</code> library, and <code>analogWrite()</code> sets the motor output to fully ON or OFF.</p>
+
+  <!-- Circuit documentation -->
+  <h2>Drawing / Schematic</h2>
+  <figure>
+    <img src="A5/A5_drawing.png" alt="Figure 1. Circuit schematic" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+    <div class="placeholder" style="display:none">Place <code>A5/A5_drawing.png</code> in your website folder to display this image.</div>
+    <figcaption><strong>Figure 1. Circuit schematic.</strong> Circuit schematic for the Arduino, infrared input, MOSFET motor driver, motor power supply, and protection components. Labels should match the actual physical connections.</figcaption>
+  </figure>
+
+  <h2>Physical Circuit</h2>
+  <figure>
+    <img src="A5/A5_photo.jpg" alt="Figure 2. Circuit photograph" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+    <div class="placeholder" style="display:none">Place <code>A5/A5_photo.jpg</code> in your website folder to display this image.</div>
+    <figcaption><strong>Figure 2. Circuit photograph.</strong> Photograph of the assembled Arduino, IR receiver, MOSFET, motor, external power supply, and wires.</figcaption>
+  </figure>
+
+  <h2>Arduino Code</h2>
+  <pre class="code-box"><code>//Include infrared remote library.
+#include &lt;IRremote.hpp&gt;
+
+//Set the IR receiver signal pin.
+const int irPin = 2;
+
+//Set the MOSFET control pin.
+const int motorPin = 9;
+//Store whether the motor is on or off.
+bool motorOn = false;
+
+void setup() {
+  // Open the Serial Monitor connection at 9600 baud.
+  Serial.begin(9600);
+  //Set the motor control pin.
+  pinMode(motorPin, OUTPUT);
+  //motor off when the program starts.
+  analogWrite(motorPin, 0);
+  // Start the infrared receiver.
+  IrReceiver.begin(irPin, DISABLE_LED_FEEDBACK);
+}
+
+void loop() {
+  //Check if the IR receiver has received a signal.
+  if (IrReceiver.decode()) {
+
+    //Accept IR signal.
+    if (IrReceiver.decodedIRData.protocol != UNKNOWN &amp;&amp;
+        !(IrReceiver.decodedIRData.flags &amp; IRDATA_FLAGS_IS_REPEAT) &amp;&amp;
+        !(IrReceiver.decodedIRData.flags &amp; IRDATA_FLAGS_IS_AUTO_REPEAT)) {
+
+      //Change the motor state.
+      motorOn = !motorOn;
+      //Check if the motor should be on.
+      if (motorOn) {
+        // Turn the motor on at full PWM.
+        analogWrite(motorPin, 255);
+        // Print the motor status.
+        Serial.println(&quot;Motor ON&quot;);
+      } else {
+        // Turn the motor off.
+        analogWrite(motorPin, 0);
+        // Print the motor status.
+        Serial.println(&quot;Motor OFF&quot;);
+      }
+    }
+    //Prepare to receive the next IR signal.
+    IrReceiver.resume();
+  }
+}</code></pre>
+
+  <section>
+    <h2>Pin and Component Explanation</h2>
+    <table>
+      <thead><tr><th>Part / value</th><th>Function</th></tr></thead>
+      <tbody>
+        <tr><td>D2</td><td>Receives decoded IR remote-control input through the IR receiver.</td></tr>
+        <tr><td>D9</td><td>Drives the IRLZ44N Gate through a 220 &Omega; resistor.</td></tr>
+        <tr><td><code>pinMode(motorPin, OUTPUT)</code></td><td>Configures D9 as an output. Immediately afterward, <code>analogWrite(motorPin, 0)</code> requests a LOW output so the motor starts OFF. Before initialization, the pull-down resistor is intended to prevent a floating Gate.</td></tr>
+        <tr><td>220 &Omega;</td><td>Limits brief current while charging or discharging the MOSFET Gate.</td></tr>
+        <tr><td>10 k&Omega;</td><td>Pulls the MOSFET Gate toward GND while D9 is not actively driving it.</td></tr>
+        <tr><td><code>analogWrite(9, 0)</code> / <code>analogWrite(9, 255)</code></td><td>0 = fully OFF; 255 = fully ON (not intermediate-speed control).</td></tr>
+        <tr><td>9600</td><td>Serial communication speed in baud.</td></tr>
+        <tr><td>Flyback diode</td><td>Connected across the motor with its striped cathode toward motor supply positive, to reduce inductive turn-off voltage spikes.</td></tr>
+        <tr><td>External supply</td><td>Supplies motor current. Its negative terminal must share GND with the Arduino; voltage must match the motor rating.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <h2>Operation Demo</h2>
+  <figure>
+    <img src="A5/A5_demo.gif" alt="Figure 3. Operation demo" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+    <div class="placeholder" style="display:none">Place <code>A5/A5_demo.gif</code> in your website folder to display this image.</div>
+    <figcaption><strong>Figure 3. Operation demo.</strong> Demonstration of the remote-controlled DC motor. A valid remote command changes the stored motor state; PWM 255 is ON and PWM 0 is OFF.</figcaption>
+  </figure>
+
+  <section>
+    <h2>Calculations and Expected Electrical Values</h2>
+    <figure>
+    <img src="A5/A5_Calculation.jpg" alt="Figure 4. Circuit calculations" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+    <div class="placeholder" style="display:none">Place <code>A5/A5_Calculation.jpg</code> in your website folder to display this image.</div>
+    <figcaption><strong>Figure 4. Circuit calculations.</strong> Calculation work for the gate series resistor, pull-down resistor, and expected voltages and currents.</figcaption>
+  </figure>
+  </section>
+
+  <section>
+    <h2>Additional Questions</h2>
+
+    <h3>Question 1. Maximum Current Through IRLZ44N Pins 2 and 3</h3>
+    <p>My transistor is the <strong>IRLZ44N</strong>. Pin 2 is Drain and Pin 3 is Source. According to the datasheet, the absolute maximum continuous drain current is <strong>47 A</strong> at atemperature of 25&deg;C; it is 33 A at a 100&deg;C temperature. The specified maximum pulsed drain current is 160 A. .</p>
+
+    <h3>Question 2. Motor Circuit With a Flyback Diode and Supply Capacitors</h3>
+    <figure>
+    <img src="A5/Q2.png" alt="Figure 5. Question 2 schematic" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+    <div class="placeholder" style="display:none">Place <code>A5/Q2.png</code> in your website folder to display this image.</div>
+    <figcaption><strong>Figure 5. Question 2 schematic.</strong> Example motor switching circuit showing an Arduino, an N-MOSFET, a DC motor, a flyback diode, and power-rail capacitors.</figcaption>
+  </figure>
+
+    <h3>Question 3. Two DC Motors Controlled by L293D</h3>
+    <figure>
+    <img src="A5/Q3.png" alt="Figure 6. Question 3 schematic" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" />
+    <div class="placeholder" style="display:none">Place <code>A5/Q3.png</code> in your website folder to display this image.</div>
+    <figcaption><strong>Figure 6. Question 3 schematic.</strong> Example connection schematic using an Arduino, an L293D dual H-bridge driver, and two DC motors.</figcaption>
+  </figure>
+    <p>An L293D uses a 5 V logic supply on pin 16, a separate motor supply on pin 8, common ground on pins 4, 5, 12, and 13, and HIGH enable inputs on pins 1 and 9. Motor A is connected between outputs 3 and 6, while Motor B is connected between outputs 11 and 14. In this example, D4/D5 control Motor A's direction and D6/D7 control Motor B's direction.</p>
+    <pre class="code-box"><code>// Configure the four motor-direction inputs as outputs.
+set D4, D5, D6, D7 to OUTPUT
+
+// Run both motors forward.
+set D4=HIGH, D5=LOW, D6=HIGH, D7=LOW
+wait 2 seconds
+
+// Run both motors backward.
+set D4=LOW, D5=HIGH, D6=LOW, D7=HIGH
+wait 2 seconds
+
+// Run Motor A forward and Motor B backward.
+set D4=HIGH, D5=LOW, D6=LOW, D7=HIGH
+wait 2 seconds
+
+// Run Motor A backward and Motor B forward.
+set D4=LOW, D5=HIGH, D6=HIGH, D7=LOW
+wait 2 seconds</code></pre>
+
+    <h3>Question 4. AI Usage</h3>
+    <p>Used ChatGPT for HTML file documentation</p>
+  </section>
+</body>
+</html>
